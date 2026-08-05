@@ -1,12 +1,24 @@
-# Ignore datasets
-datasets/*.csv
-
-# Ignore trained models
-models/
-
-# Python cache
+# Python
 __pycache__/
 *.pyc
 
-# macOS
+# Virtual environments
+venv/
+.env
+
+# Datasets
+datasets/raw/
+datasets/generated/
+datasets/processed/
+
+*.csv
+
+# Trained models
+models/
+*.pkl
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Mac
 .DS_Store

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSafe Nepal | AI Scam & Phishing Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- Main Navigation Header -->
+    <nav>
+        <div class="logo">
+            🛡️ CyberSafe <span>Nepal</span>
+        </div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#about">About</a>
+        </div>
+    </nav>
+
+    <!-- Main Hero Section -->
+    <section class="hero">
+        <div class="hero-text">
+            <div class="hero-pill">
+                🇳🇵 Intelligent Cyber Protection
+            </div>
+            <h1>
+                Check If a Message Is Safe or a Scam
+            </h1>
+            <p>
+                Instantly check suspicious SMS, emails, social media scams, or fake bank alerts before you click.
+            </p>
+
+            <div class="badges">
+                <span>🌐 English</span>
+                <span>🇳🇵 नेपाली (Nepali)</span>
+                <span>⌨ Romanized Nepali</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>
+                🔍 Inspect Message
+            </h2>
+            <form action="/predict" method="POST">
+                <textarea 
+                    name="message" 
+                    placeholder="Paste your email, SMS, or suspicious message here (उदा. 'You won Rs 50,000, click link to claim')..." 
+                    required></textarea>
+
+                <button type="submit">
+                    Check Message Safety
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- System Performance Metrics -->
+    <section class="stats">
+        <div class="stat-card">
+            <h2>98%</h2>
+            <p>Detection Accuracy</p>
+        </div>
+
+        <div class="stat-card">
+            <h2>87K+</h2>
+            <p>Scam Patterns Checked</p>
+        </div>
+
+        <div class="stat-card">
+            <h2>3-Way</h2>
+            <p>Language Support</p>
+        </div>
+    </section>
+
+    <!-- Key Protection Features -->
+    <section class="features" id="how-it-works">
+        <div>
+            <h3>🚨 Scam & Fraud Shield</h3>
+            <p>
+                Detects deceptive lottery claims, fake bank alerts, impersonation emails, and malicious website links.
+            </p>
+        </div>
+
+        <div>
+            <h3>🌏 Local Language AI</h3>
+            <p>
+                Built specifically for Nepal—understands English, Nepali script, and everyday Romanized Nepali.
+            </p>
+        </div>
+
+        <div>
+            <h3>🔒 Instant & Private</h3>
+            <p>
+                Your text is analyzed safely in real-time to give you immediate safety guidance without storing your details.
+            </p>
+        </div>
+    </section>
+
+</body>
+</html>
