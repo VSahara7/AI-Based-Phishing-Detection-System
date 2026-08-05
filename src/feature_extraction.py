@@ -20,12 +20,22 @@ print(df.head())
 # -----------------------------------------
 X = df["clean_text"]
 
-# Convert labels to numeric
-y = df["label"].replace({
+# Clean labels
+df["label"] = (
+    df["label"]
+    .astype(str)
+    .str.strip()
+    .str.lower()
+)
+
+# Convert to numeric labels
+y = df["label"].map({
     "legitimate": 0,
     "phishing": 1
-})
+}).astype(int)
 
+print(y.unique())
+print(y.dtype)
 # -----------------------------------------
 # TF-IDF
 # -----------------------------------------
