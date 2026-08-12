@@ -1,0 +1,53 @@
+
+============================================================
+AI-Based Phishing Detection System
+Evaluation Summary
+============================================================
+
+Dataset Information
+-------------------
+Dataset File           : cleaned_multilingual.csv
+Total Samples          : 87708
+
+Training Samples       : 70166
+Testing Samples        : 17542
+
+Machine Learning Model
+----------------------
+Model                  : RandomForestClassifier
+
+Feature Extraction
+------------------
+Technique              : TF-IDF Vectorizer
+
+Cross Validation
+----------------
+Fold 1                 : 0.9763
+Fold 2                 : 0.9748
+Fold 3                 : 0.9794
+Fold 4                 : 0.9766
+Fold 5                 : 0.9759
+
+Mean Accuracy          : 0.9766
+Std Deviation          : 0.0015
+
+Testing Performance
+-------------------
+Accuracy               : 0.9768
+
+ROC Analysis
+------------
+AUC Score              : 0.9972
+
+Generated Files
+---------------
+classification_report.csv
+cross_validation_results.csv
+prediction_results.csv
+confusion_matrix.png
+roc_curve.png
+learning_curve.png
+
+============================================================
+Evaluation Completed Successfully
+============================================================
