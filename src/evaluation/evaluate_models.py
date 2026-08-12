@@ -5,12 +5,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
     confusion_matrix,
     ConfusionMatrixDisplay,
     roc_curve,
-    roc_auc_score,
-    classification_report,
-    accuracy_score
+    roc_auc_score
 )
 
 from sklearn.model_selection import (
@@ -20,72 +20,41 @@ from sklearn.model_selection import (
 )
 
 # ======================================================
-# Create Results Folder
+# Create output folders
 # ======================================================
 
-RESULTS = "/Users/user/Documents/Phishing/results"
-os.makedirs(RESULTS, exist_ok=True)
+os.makedirs("/Users/user/Documents/Phishing/results", exist_ok=True)
 
 # ======================================================
 # Load Dataset
 # ======================================================
 
-print("=" * 60)
+print("="*60)
 print("Loading Dataset")
-print("=" * 60)
+print("="*60)
 
-df = pd.read_csv(
-    "/Users/user/Documents/Phishing/datasets/processed/cleaned_multilingual.csv"
-)
+df = pd.read_csv("datasets/processed/cleaned_multilingual.csv")
 
-df = df.dropna(subset=["clean_text", "label"])
-
-# Convert labels into numeric format
-
-label_map = {
-    "legitimate": 0,
-    "phishing": 1
-}
-
-df["label"] = (
-    df["label"]
-    .astype(str)
-    .str.strip()
-    .str.lower()
-    .map(label_map)
-)
-
-print(df["label"].unique())
+df = df.dropna(subset=["clean_text","label"])
 
 X = df["clean_text"].astype(str)
-y = df["label"]
+y = df["label"].astype(str)
 
-print(df.head())
+print(df.shape)
 
-print("\nDataset Shape:", df.shape)
-print(df["label"].unique())
-print(df["label"].dtype)
 # ======================================================
 # Load TF-IDF Vectorizer
 # ======================================================
 
-print("\nLoading TF-IDF Vectorizer...")
-
-vectorizer = joblib.load(
-    "/Users/user/Documents/Phishing/models/tfidf_vectorizer.pkl"
-)
+vectorizer = joblib.load("/Users/user/Documents/Phishing/models/tfidf_vectorizer.pkl")
 
 X = vectorizer.transform(X)
 
-print("✓ Vectorizer Loaded")
-
 # ======================================================
-# Train Test Split
+# Train-Test Split
 # ======================================================
 
-print("\nSplitting Dataset...")
-
-X_train, X_test, y_train, y_test = train_test_split(
+X_train,X_test,y_train,y_test=train_test_split(
     X,
     y,
     test_size=0.20,
@@ -93,30 +62,40 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y
 )
 
-print(f"Training Samples : {X_train.shape[0]}")
-print(f"Testing Samples  : {X_test.shape[0]}")
-
 # ======================================================
 # Load Best Model
 # ======================================================
 
-print("\nLoading Best Model...")
-
-model = joblib.load(
-    "/Users/user/Documents/Phishing/models/best_model.pkl"
-)
-
-print(f"Model Loaded : {type(model).__name__}")
+model=joblib.load("/Users/user/Documents/Phishing/models/best_model.pkl")
 
 # ======================================================
-# 1. Cross Validation
+# Train
 # ======================================================
 
-print("\n" + "=" * 60)
-print("5-FOLD CROSS VALIDATION")
-print("=" * 60)
+model.fit(X_train,y_train)
 
-scores = cross_val_score(
+# ======================================================
+# Classification Report
+# ======================================================
+
+print("\nClassification Report\n")
+
+y_pred=model.predict(X_test)
+
+print(classification_report(y_test,y_pred))
+
+# Save report
+
+with open("results/classification_report.txt","w") as f:
+    f.write(classification_report(y_test,y_pred))
+
+# ======================================================
+# Cross Validation
+# ======================================================
+
+print("\nRunning 5 Fold Cross Validation...\n")
+
+scores=cross_val_score(
     model,
     X_train,
     y_train,
@@ -125,344 +104,221 @@ scores = cross_val_score(
     n_jobs=-1
 )
 
-cv_results = pd.DataFrame({
-    "Fold": [1, 2, 3, 4, 5],
-    "Accuracy": scores
+for i,s in enumerate(scores):
+    print(f"Fold {i+1}: {s:.4f}")
+
+print()
+
+print("Average Accuracy:",scores.mean())
+print("Std:",scores.std())
+
+cv_df=pd.DataFrame({
+    "Fold":[1,2,3,4,5],
+    "Accuracy":scores
 })
 
-print(cv_results)
-
-print("\nAverage Accuracy :", round(scores.mean(), 4))
-print("Standard Deviation:", round(scores.std(), 4))
-
-cv_results.loc[len(cv_results)] = [
-    "Average",
-    round(scores.mean(), 4)
-]
-
-cv_results.to_csv(
-    os.path.join(
-        RESULTS,
-        "cross_validation_results.csv"
-    ),
-    index=False
-)
-
-print("\n✓ Saved cross_validation_results.csv")
-# ======================================================
-# 2. Model Evaluation
-# ======================================================
-
-print("\n" + "=" * 60)
-print("MODEL EVALUATION")
-print("=" * 60)
-
-# Train model
-model.fit(X_train, y_train)
-
-# Predictions
-y_pred = model.predict(X_test)
-
-# Accuracy
-accuracy = accuracy_score(y_test, y_pred)
-
-print(f"\nTest Accuracy : {accuracy:.4f}")
-
-# ======================================================
-# Classification Report
-# ======================================================
-
-print("\nClassification Report\n")
-
-print(
-    classification_report(
-        y_test,
-        y_pred,
-        target_names=["Legitimate", "Phishing"]
-    )
-)
-
-report = classification_report(
-    y_test,
-    y_pred,
-    target_names=["Legitimate", "Phishing"],
-    output_dict=True
-)
-
-report_df = pd.DataFrame(report).transpose()
-
-report_df.to_csv(
-    os.path.join(
-        RESULTS,
-        "classification_report.csv"
-    )
-)
-
-print("✓ Saved classification_report.csv")
-
-# ======================================================
-# Prediction Results
-# ======================================================
-
-prediction_results = pd.DataFrame({
-    "Actual_Label": y_test.map({
-        0: "Legitimate",
-        1: "Phishing"
-    }).values,
-
-    "Predicted_Label": pd.Series(y_pred).map({
-        0: "Legitimate",
-        1: "Phishing"
-    }).values
-})
-
-prediction_results.to_csv(
-    os.path.join(
-        RESULTS,
-        "prediction_results.csv"
-    ),
-    index=False,
-    encoding="utf-8-sig"
-)
-
-print("✓ Saved prediction_results.csv")
+cv_df.to_csv("/Users/user/Documents/Phishing/results/cross_validation_results.csv",index=False)
 
 # ======================================================
 # Confusion Matrix
 # ======================================================
 
-print("\nGenerating Confusion Matrix...")
+print("\nGenerating Confusion Matrix")
 
-cm = confusion_matrix(y_test, y_pred)
+cm=confusion_matrix(y_test,y_pred)
 
-disp = ConfusionMatrixDisplay(
+disp=ConfusionMatrixDisplay(
     confusion_matrix=cm,
-    display_labels=["Legitimate", "Phishing"]
+    display_labels=model.classes_
 )
 
-fig, ax = plt.subplots(figsize=(6, 6))
+fig,ax=plt.subplots(figsize=(7,6))
 
-disp.plot(
-    ax=ax,
-    cmap="Blues",
-    colorbar=False
-)
+disp.plot(ax=ax,cmap="Blues")
 
 plt.title("Confusion Matrix")
 
-plt.savefig(
-    os.path.join(
-        RESULTS,
-        "confusion_matrix.png"
-    ),
-    dpi=300,
-    bbox_inches="tight"
-)
+plt.tight_layout()
+
+plt.savefig("/Users/user/Documents/Phishing/results/confusion_matrix.png",dpi=300)
 
 plt.close()
-
-print("✓ Saved confusion_matrix.png")
 
 # ======================================================
 # ROC Curve
 # ======================================================
 
-print("\nGenerating ROC Curve...")
+print("Generating ROC Curve")
 
-# y_test already contains numeric labels (0 and 1)
-y_prob = model.predict_proba(X_test)[:, 1]
+positive="phishing"
 
-auc = roc_auc_score(
-    y_test,
-    y_prob
+y_binary=(y_test==positive).astype(int)
+
+prob=model.predict_proba(X_test)[:,1]
+
+auc=roc_auc_score(
+    y_binary,
+    prob
 )
 
-fpr, tpr, _ = roc_curve(
-    y_test,
-    y_prob
+fpr,tpr,thresholds=roc_curve(
+    y_binary,
+    prob
 )
 
-plt.figure(figsize=(7, 6))
+plt.figure(figsize=(7,6))
 
 plt.plot(
     fpr,
     tpr,
     linewidth=2,
-    label=f"AUC = {auc:.4f}"
+    label=f"AUC={auc:.4f}"
 )
 
 plt.plot(
-    [0, 1],
-    [0, 1],
-    linestyle="--",
-    color="red"
+    [0,1],
+    [0,1],
+    linestyle="--"
 )
 
 plt.xlabel("False Positive Rate")
-plt.ylabel("True Positive Rate")
-plt.title("ROC Curve")
 
-plt.grid(True)
+plt.ylabel("True Positive Rate")
+
+plt.title("ROC Curve")
 
 plt.legend()
 
-plt.savefig(
-    os.path.join(
-        RESULTS,
-        "roc_curve.png"
-    ),
-    dpi=300,
-    bbox_inches="tight"
-)
+plt.grid()
+
+plt.tight_layout()
+
+plt.savefig("results/roc_curve.png",dpi=300)
 
 plt.close()
 
-print(f"✓ AUC Score : {auc:.4f}")
-print("✓ Saved roc_curve.png")
+print("AUC =",auc)
+
 # ======================================================
-# 4. Learning Curve
+# Learning Curve
 # ======================================================
 
-print("\n" + "=" * 60)
-print("LEARNING CURVE")
-print("=" * 60)
+print("\nGenerating Learning Curve")
 
-train_sizes, train_scores, validation_scores = learning_curve(
+train_sizes,train_scores,test_scores=learning_curve(
+
     estimator=model,
+
     X=X_train,
+
     y=y_train,
+
     cv=5,
+
     scoring="accuracy",
-    train_sizes=np.linspace(0.1, 1.0, 5),
+
+    train_sizes=np.linspace(0.1,1.0,5),
+
     n_jobs=-1
+
 )
 
-train_mean = train_scores.mean(axis=1)
-validation_mean = validation_scores.mean(axis=1)
+train_mean=train_scores.mean(axis=1)
+
+test_mean=test_scores.mean(axis=1)
 
 plt.figure(figsize=(8,6))
 
 plt.plot(
+
     train_sizes,
+
     train_mean,
+
     marker="o",
+
     linewidth=2,
+
     label="Training Accuracy"
+
 )
 
 plt.plot(
+
     train_sizes,
-    validation_mean,
+
+    test_mean,
+
     marker="s",
+
     linewidth=2,
+
     label="Validation Accuracy"
+
 )
 
 plt.xlabel("Training Examples")
+
 plt.ylabel("Accuracy")
+
 plt.title("Learning Curve")
 
-plt.grid(True)
 plt.legend()
 
-plt.savefig(
-    os.path.join(
-        RESULTS,
-        "learning_curve.png"
-    ),
-    dpi=300,
-    bbox_inches="tight"
-)
+plt.grid()
+
+plt.tight_layout()
+
+plt.savefig("results/learning_curve.png",dpi=300)
 
 plt.close()
 
-print("✓ Saved learning_curve.png")
-
 # ======================================================
-# Evaluation Summary
+# Unseen Multilingual Testing
 # ======================================================
 
-print("\nSaving Evaluation Summary...")
+print("\nTesting Unseen Dataset")
 
-summary = f"""
-============================================================
-AI-Based Phishing Detection System
-Evaluation Summary
-============================================================
+test_df=pd.read_csv("datasets/testing/unseen_messages.csv")
 
-Dataset Information
--------------------
-Dataset File           : cleaned_multilingual.csv
-Total Samples          : {len(df)}
+test_df["text"]=test_df["text"].fillna("").astype(str)
 
-Training Samples       : {X_train.shape[0]}
-Testing Samples        : {X_test.shape[0]}
+X_new=vectorizer.transform(test_df["text"])
 
-Machine Learning Model
-----------------------
-Model                  : {type(model).__name__}
+prediction=model.predict(X_new)
 
-Feature Extraction
-------------------
-Technique              : TF-IDF Vectorizer
+test_df["prediction"]=prediction
 
-Cross Validation
-----------------
-Fold 1                 : {scores[0]:.4f}
-Fold 2                 : {scores[1]:.4f}
-Fold 3                 : {scores[2]:.4f}
-Fold 4                 : {scores[3]:.4f}
-Fold 5                 : {scores[4]:.4f}
+test_df["correct"]=(
+    test_df["expected_label"]==
+    test_df["prediction"]
+)
 
-Mean Accuracy          : {scores.mean():.4f}
-Std Deviation          : {scores.std():.4f}
+accuracy=test_df["correct"].mean()*100
 
-Testing Performance
--------------------
-Accuracy               : {accuracy:.4f}
+print(test_df)
 
-ROC Analysis
-------------
-AUC Score              : {auc:.4f}
+print()
 
-Generated Files
----------------
-classification_report.csv
-cross_validation_results.csv
-prediction_results.csv
-confusion_matrix.png
-roc_curve.png
-learning_curve.png
+print("Unseen Accuracy:",accuracy)
 
-============================================================
-Evaluation Completed Successfully
-============================================================
-"""
+test_df.to_csv(
+    "results/prediction_results.csv",
+    index=False
+)
 
-with open(
-    os.path.join(
-        RESULTS,
-        "evaluation_summary.txt"
-    ),
-    "w",
-    encoding="utf-8"
-) as f:
-    f.write(summary)
+# ======================================================
+# Finished
+# ======================================================
 
-print("✓ Saved evaluation_summary.txt")
+print()
 
-print("\n" + "=" * 60)
-print("Evaluation Completed Successfully")
-print("=" * 60)
+print("="*60)
 
-print("\nGenerated Files")
+print("ALL EVALUATIONS COMPLETED")
 
-print("----------------------------")
-print("✓ classification_report.csv")
-print("✓ cross_validation_results.csv")
-print("✓ prediction_results.csv")
-print("✓ evaluation_summary.txt")
-print("✓ confusion_matrix.png")
-print("✓ roc_curve.png")
-print("✓ learning_curve.png")
-print("----------------------------")
+print("="*60)
+
+print()
+
+print("Results saved in results/ folder")
