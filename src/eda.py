@@ -6,7 +6,7 @@ import os
 os.makedirs("outputs/figures", exist_ok=True)
 os.makedirs("outputs/reports", exist_ok=True)
 # Load merged dataset
-df = pd.read_csv("datasets/merged_messages.csv")
+df = pd.read_csv("/Users/user/Documents/Phishing/datasets/processed/merged_multilingual.csv")
 
 # -----------------------------
 # Basic Information

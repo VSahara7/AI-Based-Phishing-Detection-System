@@ -22,8 +22,11 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
-    classification_report
+    classification_report,
+        confusion_matrix
 )
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # =====================================================
 # Project Paths
@@ -99,6 +102,24 @@ joblib.dump(
 )
 
 # =====================================================
+# Train/Test Split
+# =====================================================
+
+print("\nSplitting Dataset...")
+
+X_train_text, X_test_text, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("Training samples:", len(X_train_text))
+print("Testing samples :", len(X_test_text))
+
+
+# =====================================================
 # TF-IDF
 # =====================================================
 
@@ -109,25 +130,50 @@ vectorizer = TfidfVectorizer(
     ngram_range=(1, 2)
 )
 
-X = vectorizer.fit_transform(X)
+# Fit TF-IDF ONLY on training data
+X_train = vectorizer.fit_transform(X_train_text)
 
+# Transform test data using the SAME fitted vectorizer
+X_test = vectorizer.transform(X_test_text)
+
+# Save fitted vectorizer for deployment
 joblib.dump(
     vectorizer,
     MODEL_DIR / "tfidf_vectorizer.pkl"
 )
 
 # =====================================================
-# Split
+# Save Exact Train/Test Artefacts
 # =====================================================
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
+joblib.dump(
+    X_train,
+    MODEL_DIR / "X_train.pkl"
 )
 
+joblib.dump(
+    X_test,
+    MODEL_DIR / "X_test.pkl"
+)
+
+joblib.dump(
+    y_train,
+    MODEL_DIR / "y_train.pkl"
+)
+
+joblib.dump(
+    y_test,
+    MODEL_DIR / "y_test.pkl"
+)
+
+print("Training TF-IDF shape:", X_train.shape)
+print("Testing TF-IDF shape :", X_test.shape)
+
+print("\nSaved train/test artefacts:")
+print("✔ X_train.pkl")
+print("✔ X_test.pkl")
+print("✔ y_train.pkl")
+print("✔ y_test.pkl")
 # =====================================================
 # Models
 # =====================================================
@@ -173,6 +219,48 @@ for name, model in models.items():
     model.fit(X_train, y_train)
 
     prediction = model.predict(X_test)
+    # =================================================
+    # Confusion Matrix
+    # =================================================
+
+    cm = confusion_matrix(y_test, prediction)
+
+    plt.figure(figsize=(6, 5))
+
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        xticklabels=encoder.classes_,
+        yticklabels=encoder.classes_
+    )
+
+    plt.xlabel("Predicted Label")
+    plt.ylabel("Actual Label")
+    plt.title(f"Confusion Matrix - {name}")
+
+    plt.tight_layout()
+
+    confusion_filename = (
+        name.lower().replace(" ", "_")
+        + "_confusion_matrix.png"
+    )
+
+    plt.savefig(
+        RESULT_DIR / confusion_filename,
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.close()
+
+    print(
+        f"✔ Confusion matrix saved: {confusion_filename}"
+    )
+    
+    # =================================================
+    # Performance Metrics
+    # =================================================
 
     accuracy = accuracy_score(
         y_test,
